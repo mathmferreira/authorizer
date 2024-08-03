@@ -16,14 +16,14 @@ public class Account {
 
     @Id
     @EqualsAndHashCode.Include
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_sequence")
-    @SequenceGenerator(name = "account_sequence", sequenceName = "account_id_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
     private Long id;
 
     @NotBlank
     private String owner;
 
+    @Builder.Default
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
     private List<BenefitBalance> balances = new ArrayList<>();
 
