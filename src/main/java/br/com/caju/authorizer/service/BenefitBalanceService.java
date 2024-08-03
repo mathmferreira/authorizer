@@ -9,8 +9,10 @@ import br.com.caju.authorizer.repository.BenefitBalanceRepository;
 import br.com.caju.authorizer.util.BigDecimalUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
@@ -33,6 +35,12 @@ public class BenefitBalanceService {
         return repository.findByAccountAndBalanceType(account, findBalanceTypeByMcc(mcc)).orElseThrow(EntityNotFoundException::new);
     }
 
+    public List<BenefitBalance> findByAccount(String accountId) {
+        Assert.isTrue(StringUtils.isNotBlank(accountId), "accountId cannot be blank");
+        return repository.findByAccount(accountId);
+    }
+
+    @Transactional
     public void debitBalance(BenefitBalance balance, BigDecimal amount) {
         checkAmount(balance);
         if (BigDecimalUtils.isLessThan(balance.getAmount(), amount)) {
@@ -42,6 +50,10 @@ public class BenefitBalanceService {
         balance.setAmount(newAmount);
         repository.save(balance);
     }
+
+    //*****************************************************************************************************************
+    //******************************************* PRIVATE/PROTECTED METHODS *******************************************
+    //*****************************************************************************************************************
 
     private String findBalanceTypeByMcc(Integer mcc) {
         return MCC_MAP.entrySet().stream()

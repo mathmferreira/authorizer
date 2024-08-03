@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 @Service
@@ -16,7 +17,8 @@ public class TransactionService {
     private final AccountService accountService;
     private final BenefitBalanceService balanceService;
 
-    public Transaction authorizeTransaction(Transaction transaction, String accountId) {
+    @Transactional
+    public void authorizeTransaction(Transaction transaction, String accountId) {
         Assert.notNull(transaction, "transaction cannot be null");
         Assert.isTrue(StringUtils.isNotBlank(accountId), "accountId cannot be blank");
         var account = accountService.getReferenceById(Long.valueOf(accountId));
@@ -24,7 +26,7 @@ public class TransactionService {
         balanceService.debitBalance(benefitBalance, transaction.getTotalAmount());
         transaction.setAccount(account);
         transaction.setId(null);
-        return repository.save(transaction);
+        repository.save(transaction);
     }
 
 }
