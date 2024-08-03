@@ -24,9 +24,9 @@ import java.util.Map;
 @RequiredArgsConstructor(onConstructor_ = { @Autowired })
 public class BenefitBalanceService {
 
-    private static final List<Integer> FOOD_CODES = Arrays.asList(5411, 5412);
-    private static final List<Integer> MEAL_CODES = Arrays.asList(5811, 5812);
-    private static final Map<String, List<Integer>> MCC_MAP = Map.of("FOOD", FOOD_CODES, "MEAL", MEAL_CODES);
+    protected static final List<Integer> FOOD_CODES = Arrays.asList(5411, 5412);
+    protected static final List<Integer> MEAL_CODES = Arrays.asList(5811, 5812);
+    protected static final Map<String, List<Integer>> MCC_MAP = Map.of("FOOD", FOOD_CODES, "MEAL", MEAL_CODES);
 
     private final BenefitBalanceRepository repository;
 
@@ -42,7 +42,7 @@ public class BenefitBalanceService {
 
     @Transactional
     public void debitBalance(BenefitBalance balance, BigDecimal amount) {
-        checkAmount(balance);
+        checkBalanceAndAmount(balance, amount);
         if (BigDecimalUtils.isLessThan(balance.getAmount(), amount)) {
             throw new InsufficientBalanceException();
         }
@@ -63,9 +63,9 @@ public class BenefitBalanceService {
                 .orElseThrow(InvalidMccException::new);
     }
 
-    private void checkAmount(BenefitBalance balance) {
+    private void checkBalanceAndAmount(BenefitBalance balance, BigDecimal amount) {
         Assert.notNull(balance, "balance cannot be null");
-        if (BigDecimalUtils.isLessThan(balance.getAmount(), BigDecimal.ZERO)) {
+        if (BigDecimalUtils.isLessThan(amount, BigDecimal.ZERO)) {
             throw new InvalidAmountException();
         }
     }
