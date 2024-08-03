@@ -25,6 +25,8 @@ repositories {
 
 val commonsLangVersion = "3.15.0"
 val commonsCollectionsVersion = "4.4"
+val restAssuredVersion = "5.5.0"
+val hamcrestVersion = "3.0"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -37,6 +39,8 @@ dependencies {
 
 	implementation("org.apache.commons:commons-lang3:$commonsLangVersion")
 	implementation("org.apache.commons:commons-collections4:$commonsCollectionsVersion")
+	implementation("io.rest-assured:rest-assured:$restAssuredVersion")
+	implementation("io.rest-assured:spring-mock-mvc:$restAssuredVersion")
 
 	runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
 
@@ -45,6 +49,7 @@ dependencies {
 	compileOnly("org.projectlombok:lombok")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.integration:spring-integration-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
