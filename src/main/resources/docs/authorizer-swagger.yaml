@@ -1,0 +1,129 @@
+openapi: 3.1.0
+
+info:
+  title: Transactions Authorizer API
+  description: API documentation for authorizing transactions.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+
+
+paths:
+  /v1/benefits/balance/{accountId}:
+    get:
+      tags:
+        - Benefits Balance
+      summary: Get benefit balances by account
+      description: Returns a list of benefit balances for a specific account.
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+          description: The ID of the account to retrieve benefit balances for.
+      responses:
+        '200':
+          description: List of benefit balances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BenefitBalanceVO'
+
+  /v1/transaction/authorize:
+    post:
+      tags:
+        - Transaction
+      summary: Authorize a transaction
+      description: Authorizes a transaction based on the provided information.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionVO'
+      responses:
+        '200':
+          description: Transaction authorization response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponseVO'
+              examples:
+                approved:
+                  value:
+                    code: "00"
+                  summary: Transaction Approved
+                  description: The transaction is approved.
+                insufficient_balance:
+                  value:
+                    code: "51"
+                  summary: Transaction Rejected
+                  description: The transaction is rejected due to insufficient balance.
+                error:
+                  value:
+                    code: "07"
+                  summary: Error
+                  description: The transaction cannot be processed due to an error.
+
+components:
+  schemas:
+    BenefitBalanceVO:
+      type: object
+      properties:
+        balanceType:
+          type: string
+          description: Type of balance
+        totalAmount:
+          type: number
+          format: double
+          description: Balance amount
+      required:
+        - balanceType
+        - totalAmount
+
+    TransactionVO:
+      type: object
+      properties:
+        account:
+          type: string
+          description: Account related to the transaction
+        totalAmount:
+          type: number
+          format: double
+          description: Total transaction amount
+        mcc:
+          type: integer
+          description: >
+            A 4-digit numerical code that classifies businesses based on the type of goods sold or services provided. 
+            The MCC contains the classification of the establishment. Based on its value, the balance to be used 
+            (for the entire transaction amount) is decided. <br><br>
+            
+            Rules:<br>
+            - If the MCC is "5411" or "5412", the FOOD balance will be used.<br>
+            - If the MCC is "5811" or "5812", the MEAL balance will be used.<br>
+            - For any other MCC values, the response will be an error.<br>
+          example: 5411
+        merchant:
+          type: string
+          description: Merchant name
+      required:
+        - account
+        - totalAmount
+        - mcc
+        - merchant
+
+    TransactionResponseVO:
+      type: object
+      properties:
+        code:
+          type: string
+          description:
+            Transaction response code. <br>Possible values are:<br>
+            - "00" if the transaction is approved.<br>
+            - "51" if the transaction is rejected due to insufficient balance.<br>
+            - "07" if any other issue prevents the transaction from being processed.<br>
+      required:
+        - code

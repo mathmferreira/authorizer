@@ -17,6 +17,16 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.MariaDBDialect
 
+  web:
+    resources:
+      static-locations: classpath:/docs/
+
 server:
   servlet:
     context-path: /authorizer/api
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    url: /authorizer-swagger.yaml
