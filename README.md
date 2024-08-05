@@ -43,16 +43,6 @@ You can access the docker documentation for installation and configuration instr
 
 ### ‍✅️ Rules
 
-#### Transaction Authorization Rules
-- If `mcc` is `"5411"` or `"5412"`, the `FOOD` balance will be used.<br>
-- If `mcc` is `"5811"` or `"5812"`, the `MEAL` balance will be used.<br>
-- For any other `mcc` values, the application will treat as invalid.
-
-#### Possible Responses
-- `{ "code": "00" }` if the transaction is **approved**
-- `{ "code": "51" }` if the transaction is **declined** due to insufficient funds
-- `{ "code": "07" }` for any other issue preventing the transaction
-
 #### Example Request
 
 This is an example of request for authorize a transaction. (All the fields are required)
@@ -65,6 +55,16 @@ This is an example of request for authorize a transaction. (All the fields are r
   "merchant": "Supermarket XYZ"
 }
 ```
+
+#### Transaction Authorization Rules
+- If `mcc` is `"5411"` or `"5412"`, the `FOOD` balance will be used.<br>
+- If `mcc` is `"5811"` or `"5812"`, the `MEAL` balance will be used.<br>
+- For any other `mcc` values, the application will treat as invalid.
+
+#### Possible Responses
+- `{ "code": "00" }` if the transaction is **approved**
+- `{ "code": "51" }` if the transaction is **declined** due to insufficient funds
+- `{ "code": "07" }` for any other issue preventing the transaction
 
 ### API Docs 📃
 
