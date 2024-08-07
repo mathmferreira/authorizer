@@ -104,7 +104,8 @@ components:
             Rules:<br>
             - If the MCC is "5411" or "5412", the FOOD balance will be used.<br>
             - If the MCC is "5811" or "5812", the MEAL balance will be used.<br>
-            - For any other MCC values, the response will be an error.<br>
+            - For any other MCC values, the CASH balance will be used as fallback.<br>
+            - If the benefit balance has insufficient amount then CASH balance will be used as fallback.<br>
           example: 5411
         merchant:
           type: string

@@ -3,7 +3,6 @@ package br.com.caju.authorizer.controller;
 import br.com.caju.authorizer.domain.vo.TransactionVO;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
-import br.com.caju.authorizer.exception.InvalidMccException;
 import br.com.caju.authorizer.records.TransactionResponseVO;
 import br.com.caju.authorizer.service.TransactionService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,9 +22,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 @AutoConfigureMockMvc
@@ -110,17 +109,17 @@ public class TransactionControllerTests {
     }
 
     @Test
-    public void givenInvalidMcc_whenAuthorizeTransaction_thenReturnCode07() throws JsonProcessingException {
+    public void givenInvalidMcc_whenAuthorizeTransaction_thenReturnCode00() throws JsonProcessingException {
         var request = TransactionVO.builder().account("123").merchant("Test")
                 .mcc(9999).totalAmount(NumberUtils.toScaledBigDecimal(100.00)).build();
-        doThrow(InvalidMccException.class).when(service).authorizeTransaction(any(), anyString());
+        doNothing().when(service).authorizeTransaction(any(), anyString());
 
         given().contentType(ContentType.JSON).body(request)
                 .when().post(basePath + "/authorize")
                 .then().log().ifValidationFails()
                 .status(HttpStatus.OK)
                 .body(notNullValue(), not(emptyString()))
-                .body(equalTo(mapper.writeValueAsString(errorResponse)));
+                .body(equalTo(mapper.writeValueAsString(successResponse)));
     }
 
     @Test

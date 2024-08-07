@@ -3,6 +3,7 @@ package br.com.caju.authorizer.controller;
 import br.com.caju.authorizer.domain.model.FoodBalance;
 import br.com.caju.authorizer.domain.model.MealBalance;
 import br.com.caju.authorizer.domain.vo.BenefitBalanceVO;
+import br.com.caju.authorizer.enums.BalanceType;
 import br.com.caju.authorizer.service.BenefitBalanceService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,7 +48,7 @@ public class BenefitBalanceControllerTests {
         basePath = "/v1/benefits/balance";
         mapper = JsonMapper.builder().findAndAddModules().build();
         foodBalance = new FoodBalance();
-        foodBalance.setBalanceType("FOOD");
+        foodBalance.setBalanceType(BalanceType.FOOD);
         foodBalance.setAmount(NumberUtils.toScaledBigDecimal(500.00));
         mealBalance = new MealBalance();
         mealBalance.setAmount(NumberUtils.toScaledBigDecimal(300.00));

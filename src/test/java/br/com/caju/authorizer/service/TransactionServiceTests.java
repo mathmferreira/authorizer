@@ -1,11 +1,12 @@
 package br.com.caju.authorizer.service;
 
 import br.com.caju.authorizer.domain.model.Account;
+import br.com.caju.authorizer.domain.model.CashBalance;
 import br.com.caju.authorizer.domain.model.FoodBalance;
 import br.com.caju.authorizer.domain.model.Transaction;
+import br.com.caju.authorizer.enums.BalanceType;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
-import br.com.caju.authorizer.exception.InvalidMccException;
 import br.com.caju.authorizer.repository.TransactionRepository;
 import br.com.caju.authorizer.util.BigDecimalUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,7 +48,7 @@ public class TransactionServiceTests {
     public void setup() {
         foodBalance = new FoodBalance();
         foodBalance.setId(1L);
-        foodBalance.setBalanceType("FOOD");
+        foodBalance.setBalanceType(BalanceType.FOOD);
         foodBalance.setAmount(NumberUtils.toScaledBigDecimal(500.00));
     }
 
@@ -91,17 +92,20 @@ public class TransactionServiceTests {
     }
 
     @Test
-    public void givenInvalidMcc_whenAuthorizeTransaction_thenThrowInvalidMccException() {
+    public void givenInvalidMcc_whenAuthorizeTransaction_thenTransactionIsCreated() {
         var transaction = Transaction.builder().mcc(9999).merchant("Test")
                 .totalAmount(NumberUtils.toScaledBigDecimal(100.00)).build();
 
         when(accountService.getReferenceById(anyLong())).thenReturn(new Account());
-        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenThrow(InvalidMccException.class);
+        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenReturn(new CashBalance());
+        doNothing().when(balanceService).debitBalance(any(), any());
 
-        assertThrows(InvalidMccException.class, () -> service.authorizeTransaction(transaction, "1"));
+        assertDoesNotThrow(() -> service.authorizeTransaction(transaction, "1"));
 
         verify(accountService).getReferenceById(anyLong());
         verify(balanceService).findByAccountAndMcc(any(), anyInt());
+        verify(balanceService).debitBalance(any(CashBalance.class), any());
+        verify(repository).save(any());
     }
 
     @Test
