@@ -2,10 +2,11 @@ package br.com.caju.authorizer.service;
 
 import br.com.caju.authorizer.domain.model.Account;
 import br.com.caju.authorizer.domain.model.BenefitBalance;
+import br.com.caju.authorizer.domain.model.CashBalance;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
-import br.com.caju.authorizer.exception.InvalidMccException;
 import br.com.caju.authorizer.repository.BenefitBalanceRepository;
+import br.com.caju.authorizer.repository.CashBalanceRepository;
 import br.com.caju.authorizer.util.BigDecimalUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class BenefitBalanceService {
     protected static final Map<String, List<Integer>> MCC_MAP = Map.of("FOOD", FOOD_CODES, "MEAL", MEAL_CODES);
 
     private final BenefitBalanceRepository repository;
+    private final CashBalanceRepository cashBalanceRepository;
 
     public BenefitBalance findByAccountAndMcc(Account account, Integer mcc) {
         Assert.notNull(mcc, "mcc cannot be null");
@@ -42,10 +44,7 @@ public class BenefitBalanceService {
 
     @Transactional
     public void debitBalance(BenefitBalance balance, BigDecimal amount) {
-        checkBalanceAndAmount(balance, amount);
-        if (BigDecimalUtils.isLessThan(balance.getAmount(), amount)) {
-            throw new InsufficientBalanceException();
-        }
+        balance = checkBalanceAndAmount(balance, amount);
         var newAmount = balance.getAmount().subtract(amount);
         balance.setAmount(newAmount);
         repository.save(balance);
@@ -60,14 +59,37 @@ public class BenefitBalanceService {
                 .filter(entry -> entry.getValue().contains(mcc))
                 .map(Map.Entry::getKey)
                 .findFirst()
-                .orElseThrow(InvalidMccException::new);
+                .orElse("CASH");
     }
 
-    private void checkBalanceAndAmount(BenefitBalance balance, BigDecimal amount) {
+    private BenefitBalance checkBalanceAndAmount(BenefitBalance balance, BigDecimal amount) {
         Assert.notNull(balance, "balance cannot be null");
         if (BigDecimalUtils.isLessThan(amount, BigDecimal.ZERO)) {
             throw new InvalidAmountException();
         }
+        if (BigDecimalUtils.isLessThan(balance.getAmount(), amount)) {
+            balance = fallbackCashBalance(balance, amount);
+        }
+        return balance;
+    }
+
+    private BenefitBalance fallbackCashBalance(BenefitBalance balance, BigDecimal amount) {
+        checkVerifiedBalance(balance);
+        return checkCashBalance(balance.getAccount(), amount);
+    }
+
+    private void checkVerifiedBalance(BenefitBalance balance) {
+        if (balance instanceof CashBalance) {
+            throw new InsufficientBalanceException();
+        }
+    }
+
+    private CashBalance checkCashBalance(Account account, BigDecimal amount) {
+        var cashBalance = cashBalanceRepository.findByAccount(account).orElseThrow(EntityNotFoundException::new);
+        if (BigDecimalUtils.isLessThan(cashBalance.getAmount(), amount)) {
+            throw new InsufficientBalanceException();
+        }
+        return cashBalance;
     }
 
 }
