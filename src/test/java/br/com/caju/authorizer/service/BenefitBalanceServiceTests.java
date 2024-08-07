@@ -1,13 +1,14 @@
 package br.com.caju.authorizer.service;
 
 import br.com.caju.authorizer.domain.model.Account;
+import br.com.caju.authorizer.domain.model.CashBalance;
 import br.com.caju.authorizer.domain.model.FoodBalance;
 import br.com.caju.authorizer.domain.model.MealBalance;
+import br.com.caju.authorizer.enums.BalanceType;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
-import br.com.caju.authorizer.exception.InvalidMccException;
 import br.com.caju.authorizer.repository.BenefitBalanceRepository;
-import br.com.caju.authorizer.util.BigDecimalUtils;
+import br.com.caju.authorizer.repository.CashBalanceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -34,13 +35,16 @@ public class BenefitBalanceServiceTests {
     @Mock
     private BenefitBalanceRepository repository;
 
+    @Mock
+    private CashBalanceRepository cashBalanceRepository;
+
     @InjectMocks
     private BenefitBalanceService service;
 
     @Test
     public void givenValidAccountAndMcc_whenFindByAccountAndMcc_thenReturnBenefitBalance() {
-        when(repository.findByAccountAndBalanceType(any(), eq("FOOD"))).thenReturn(Optional.of(new FoodBalance()));
-        when(repository.findByAccountAndBalanceType(any(), eq("MEAL"))).thenReturn(Optional.of(new MealBalance()));
+        when(repository.findByAccountAndBalanceType(any(), eq(BalanceType.FOOD))).thenReturn(Optional.of(new FoodBalance()));
+        when(repository.findByAccountAndBalanceType(any(), eq(BalanceType.MEAL))).thenReturn(Optional.of(new MealBalance()));
 
         for (Integer foodCode : BenefitBalanceService.FOOD_CODES) {
             var balance = assertDoesNotThrow(() -> service.findByAccountAndMcc(new Account(), foodCode));
@@ -56,8 +60,12 @@ public class BenefitBalanceServiceTests {
     }
 
     @Test
-    public void givenInvalidMcc_whenFindByAccountAndMcc_thenThrowInvalidMccException() {
-        assertThrows(InvalidMccException.class, () -> service.findByAccountAndMcc(new Account(), 9999));
+    public void givenInvalidMcc_whenFindByAccountAndMcc_thenReturnCashBalance() {
+        when(repository.findByAccountAndBalanceType(any(), any())).thenReturn(Optional.of(new CashBalance()));
+        var actual = assertDoesNotThrow(() -> service.findByAccountAndMcc(new Account(), 9999));
+        verify(repository).findByAccountAndBalanceType(any(), any());
+        assertNotNull(actual);
+        assertInstanceOf(CashBalance.class, actual);
     }
 
     @Test
@@ -68,7 +76,7 @@ public class BenefitBalanceServiceTests {
 
     @Test
     public void givenNotFoundBalance_whenFindByAccountAndMcc_thenThrowEntityNotFoundException() {
-        when(repository.findByAccountAndBalanceType(any(), anyString())).thenReturn(Optional.empty());
+        when(repository.findByAccountAndBalanceType(any(), any())).thenReturn(Optional.empty());
         assertThrows(EntityNotFoundException.class, () -> service.findByAccountAndMcc(new Account(), 5411));
     }
 
@@ -101,7 +109,7 @@ public class BenefitBalanceServiceTests {
         assertDoesNotThrow(() -> service.debitBalance(balance, BigDecimal.valueOf(100)));
 
         verify(repository).save(any());
-        assertTrue(BigDecimalUtils.equals(BigDecimal.valueOf(400), balance.getAmount()));
+        assertEquals(400.0, balance.getAmount().doubleValue());
     }
 
     @Test
@@ -120,12 +128,43 @@ public class BenefitBalanceServiceTests {
     }
 
     @Test
-    public void givenInsufficientBalance_whenDebitBalance_thenThrowInsufficientBalanceException() {
+    public void givenInsufficientBenefitAndCashBalance_whenDebitBalance_thenFallbacksAndThrowInsufficientBalanceException() {
         var balance = new FoodBalance();
         balance.setAmount(NumberUtils.toScaledBigDecimal(5.0));
+        var cashBalance = new CashBalance();
+        cashBalance.setAmount(NumberUtils.toScaledBigDecimal(9.0));
+
+        when(cashBalanceRepository.findByAccount(any())).thenReturn(Optional.of(cashBalance));
 
         assertThrows(InsufficientBalanceException.class, () -> service.debitBalance(balance, BigDecimal.TEN));
+        verify(cashBalanceRepository).findByAccount(any());
         verifyNoInteractions(repository);
+    }
+
+    @Test
+    public void givenInsufficientCashBalance_whenDebitBalance_thenDontFallbackAndThrowInsufficientBalanceException() {
+        var balance = new CashBalance();
+        balance.setAmount(NumberUtils.toScaledBigDecimal(9.0));
+
+        assertThrows(InsufficientBalanceException.class, () -> service.debitBalance(balance, BigDecimal.TEN));
+        verifyNoInteractions(cashBalanceRepository);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    public void givenInsufficientBenefitBalance_whenDebitBalance_thenFallbacksAndSaveNewCashBalance() {
+        var balance = new FoodBalance();
+        balance.setAmount(NumberUtils.toScaledBigDecimal(5.0));
+        var cashBalance = new CashBalance();
+        cashBalance.setAmount(NumberUtils.toScaledBigDecimal(100.0));
+
+        when(cashBalanceRepository.findByAccount(any())).thenReturn(Optional.of(cashBalance));
+
+        assertDoesNotThrow(() -> service.debitBalance(balance, BigDecimal.TEN));
+        verify(cashBalanceRepository).findByAccount(any());
+        verify(repository).save(any());
+        assertEquals(5.0, balance.getAmount().doubleValue());
+        assertEquals(90.0, cashBalance.getAmount().doubleValue());
     }
 
 }
