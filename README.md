@@ -57,8 +57,8 @@ This is an example of request for authorize a transaction. (All the fields are r
 ```
 
 #### Transaction Authorization Rules
-- If `mcc` is `"5411"` or `"5412"`, the `FOOD` balance will be used.<br>
-- If `mcc` is `"5811"` or `"5812"`, the `MEAL` balance will be used.<br>
+- If `mcc` is `"5411"` or `"5412"`, the `FOOD` balance will be used.
+- If `mcc` is `"5811"` or `"5812"`, the `MEAL` balance will be used.
 - For any other `mcc` values, the `CASH` balance will be used as fallback.
 - If the benefit balance has insufficient amount then `CASH` balance will be used as fallback.
 
