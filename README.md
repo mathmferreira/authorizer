@@ -85,5 +85,5 @@ SUPERMERCADOS BH          FOOD
 Once you have the application running, you can access the documentation of the API in the URL:
 
 ```
-http://localhost:8080/swagger-ui/index.html
+http://localhost:8080/authorizer/api/swagger-ui/index.html
 ```
