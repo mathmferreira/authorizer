@@ -61,6 +61,19 @@ This is an example of request for authorize a transaction. (All the fields are r
 - If `mcc` is `"5811"` or `"5812"`, the `MEAL` balance will be used.
 - For any other `mcc` values, the `CASH` balance will be used as fallback.
 - If the benefit balance has insufficient amount then `CASH` balance will be used as fallback.
+- Sometimes, the `mcc` are incorrect and a transaction must be processed taking into account the merchant's data as well. Register merchants using the `import.sql` file located at `src/main/resources/` to make sure that the name will be considered.
+
+#### Default Merchants
+
+```
+Merchant Name             Type
+-------------------------------
+UBER EATS                 MEAL
+PADARIA DO ZE             FOOD
+RESTAURANTE DA MARIA      MEAL
+SUPERMERCADOS BH          FOOD
+```
+* **Remember**: For more merchants just add them in the insert query on `import.sql`
 
 #### Possible Responses
 - `{ "code": "00" }` if the transaction is **approved**
