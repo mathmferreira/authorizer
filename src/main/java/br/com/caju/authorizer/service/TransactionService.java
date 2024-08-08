@@ -22,8 +22,11 @@ public class TransactionService {
         Assert.notNull(transaction, "transaction cannot be null");
         Assert.isTrue(StringUtils.isNotBlank(accountId), "accountId cannot be blank");
         var account = accountService.getReferenceById(Long.valueOf(accountId));
-        var benefitBalance = balanceService.findByAccountAndMcc(account, transaction.getMcc());
+        var benefitBalance = balanceService.findByAccountAndBalanceType(account, transaction.getMerchant());
         balanceService.debitBalance(benefitBalance, transaction.getTotalAmount());
+        if (!BenefitBalanceService.MCC_MAP.get(benefitBalance.getBalanceType()).contains(transaction.getMcc())) {
+            transaction.setMcc(BenefitBalanceService.MCC_MAP.get(benefitBalance.getBalanceType()).stream().findFirst().orElseThrow());
+        }
         transaction.setAccount(account);
         transaction.setId(null);
         repository.save(transaction);

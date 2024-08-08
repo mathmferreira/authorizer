@@ -3,6 +3,7 @@ package br.com.caju.authorizer.service;
 import br.com.caju.authorizer.domain.model.Account;
 import br.com.caju.authorizer.domain.model.BenefitBalance;
 import br.com.caju.authorizer.domain.model.CashBalance;
+import br.com.caju.authorizer.domain.model.Merchant;
 import br.com.caju.authorizer.enums.BalanceType;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
@@ -28,14 +29,14 @@ public class BenefitBalanceService {
 
     protected static final List<Integer> FOOD_CODES = Arrays.asList(5411, 5412);
     protected static final List<Integer> MEAL_CODES = Arrays.asList(5811, 5812);
-    protected static final Map<BalanceType, List<Integer>> MCC_MAP = Map.of(BalanceType.FOOD, FOOD_CODES, BalanceType.MEAL, MEAL_CODES);
+    public static final Map<BalanceType, List<Integer>> MCC_MAP = Map.of(BalanceType.FOOD, FOOD_CODES, BalanceType.MEAL, MEAL_CODES);
 
     private final BenefitBalanceRepository repository;
     private final CashBalanceRepository cashBalanceRepository;
+    private final MerchantService merchantService;
 
-    public BenefitBalance findByAccountAndMcc(Account account, Integer mcc) {
-        Assert.notNull(mcc, "mcc cannot be null");
-        return repository.findByAccountAndBalanceType(account, findBalanceTypeByMcc(mcc)).orElseThrow(EntityNotFoundException::new);
+    public BenefitBalance findByAccountAndBalanceType(Account account, String merchant) {
+        return repository.findByAccountAndBalanceType(account, findBalanceTypeByMerchant(merchant)).orElseThrow(EntityNotFoundException::new);
     }
 
     public List<BenefitBalance> findByAccount(String accountId) {
@@ -55,12 +56,11 @@ public class BenefitBalanceService {
     //******************************************* PRIVATE/PROTECTED METHODS *******************************************
     //*****************************************************************************************************************
 
-    private BalanceType findBalanceTypeByMcc(Integer mcc) {
-        return MCC_MAP.entrySet().stream()
-                .filter(entry -> entry.getValue().contains(mcc))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(BalanceType.CASH);
+    private BalanceType findBalanceTypeByMerchant(String merchant) {
+        Assert.isTrue(StringUtils.isNotBlank(merchant), "merchant cannot be blank");
+        var name = merchant.substring(0, merchant.indexOf("  "));
+        var merchantEntity = merchantService.findByName(name.toUpperCase());
+        return merchantEntity.map(Merchant::getBalanceType).orElse(BalanceType.CASH);
     }
 
     private BenefitBalance checkBalanceAndAmount(BenefitBalance balance, BigDecimal amount) {
