@@ -1,9 +1,6 @@
 package br.com.caju.authorizer.service;
 
-import br.com.caju.authorizer.domain.model.Account;
-import br.com.caju.authorizer.domain.model.CashBalance;
-import br.com.caju.authorizer.domain.model.FoodBalance;
-import br.com.caju.authorizer.domain.model.MealBalance;
+import br.com.caju.authorizer.domain.model.*;
 import br.com.caju.authorizer.enums.BalanceType;
 import br.com.caju.authorizer.exception.InsufficientBalanceException;
 import br.com.caju.authorizer.exception.InvalidAmountException;
@@ -38,46 +35,50 @@ public class BenefitBalanceServiceTests {
     @Mock
     private CashBalanceRepository cashBalanceRepository;
 
+    @Mock
+    private MerchantService merchantService;
+
     @InjectMocks
     private BenefitBalanceService service;
 
     @Test
-    public void givenValidAccountAndMcc_whenFindByAccountAndMcc_thenReturnBenefitBalance() {
+    public void givenValidAccountAndMcc_whenFindByAccountAndBalanceType_thenReturnBenefitBalance() {
+        var foodMerchant = Merchant.builder().balanceType(BalanceType.FOOD).build();
+        var mealMerchant = Merchant.builder().balanceType(BalanceType.MEAL).build();
         when(repository.findByAccountAndBalanceType(any(), eq(BalanceType.FOOD))).thenReturn(Optional.of(new FoodBalance()));
         when(repository.findByAccountAndBalanceType(any(), eq(BalanceType.MEAL))).thenReturn(Optional.of(new MealBalance()));
+        when(merchantService.findByName(anyString())).thenReturn(Optional.of(foodMerchant), Optional.of(mealMerchant));
 
-        for (Integer foodCode : BenefitBalanceService.FOOD_CODES) {
-            var balance = assertDoesNotThrow(() -> service.findByAccountAndMcc(new Account(), foodCode));
-            assertNotNull(balance);
-            assertInstanceOf(FoodBalance.class, balance);
-        }
+        var balance = assertDoesNotThrow(() -> service.findByAccountAndBalanceType(new Account(), "PADARIA DO ZE     BRASIL"));
+        assertNotNull(balance);
+        assertInstanceOf(FoodBalance.class, balance);
 
-        for (Integer mealCode : BenefitBalanceService.MEAL_CODES) {
-            var balance = assertDoesNotThrow(() -> service.findByAccountAndMcc(new Account(), mealCode));
-            assertNotNull(balance);
-            assertInstanceOf(MealBalance.class, balance);
-        }
+        balance = assertDoesNotThrow(() -> service.findByAccountAndBalanceType(new Account(), "UBER EATS    BRASIL"));
+        assertNotNull(balance);
+        assertInstanceOf(MealBalance.class, balance);
     }
 
     @Test
-    public void givenInvalidMcc_whenFindByAccountAndMcc_thenReturnCashBalance() {
+    public void givenInvalidMcc_whenFindByAccountAndBalanceType_thenReturnCashBalance() {
         when(repository.findByAccountAndBalanceType(any(), any())).thenReturn(Optional.of(new CashBalance()));
-        var actual = assertDoesNotThrow(() -> service.findByAccountAndMcc(new Account(), 9999));
+        when(merchantService.findByName(anyString())).thenReturn(Optional.of(new Merchant()));
+        var actual = assertDoesNotThrow(() -> service.findByAccountAndBalanceType(new Account(), "UBER EATS    BRASIL"));
         verify(repository).findByAccountAndBalanceType(any(), any());
         assertNotNull(actual);
         assertInstanceOf(CashBalance.class, actual);
     }
 
     @Test
-    public void givenNullMcc_whenFindByAccountAndMcc_thenThrowIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, () -> service.findByAccountAndMcc(new Account(), null));
+    public void givenNullMcc_whenFindByAccountAndBalanceType_thenThrowIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> service.findByAccountAndBalanceType(new Account(), null));
         verifyNoInteractions(repository);
     }
 
     @Test
-    public void givenNotFoundBalance_whenFindByAccountAndMcc_thenThrowEntityNotFoundException() {
+    public void givenNotFoundBalance_whenFindByAccountAndBalanceType_thenThrowEntityNotFoundException() {
         when(repository.findByAccountAndBalanceType(any(), any())).thenReturn(Optional.empty());
-        assertThrows(EntityNotFoundException.class, () -> service.findByAccountAndMcc(new Account(), 5411));
+        when(merchantService.findByName(anyString())).thenReturn(Optional.of(new Merchant()));
+        assertThrows(EntityNotFoundException.class, () -> service.findByAccountAndBalanceType(new Account(), "UBER EATS    BRASIL"));
     }
 
     @Test

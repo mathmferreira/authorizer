@@ -1,7 +1,6 @@
 package br.com.caju.authorizer.service;
 
 import br.com.caju.authorizer.domain.model.Account;
-import br.com.caju.authorizer.domain.model.CashBalance;
 import br.com.caju.authorizer.domain.model.FoodBalance;
 import br.com.caju.authorizer.domain.model.Transaction;
 import br.com.caju.authorizer.enums.BalanceType;
@@ -54,13 +53,13 @@ public class TransactionServiceTests {
 
     @Test
     public void givenValidTransaction_whenAuthorizeTransaction_thenTransactionIsCreated() {
-        var transaction = Transaction.builder().mcc(5412).merchant("Test")
+        var transaction = Transaction.builder().mcc(5412).merchant("UBER EATS     BRASIL")
                 .totalAmount(NumberUtils.toScaledBigDecimal(100.00)).build();
         var expectedBalance = NumberUtils.toScaledBigDecimal(400.00);
 
         when(repository.save(any())).thenReturn(new Transaction());
         when(accountService.getReferenceById(anyLong())).thenReturn(new Account());
-        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenReturn(foodBalance);
+        when(balanceService.findByAccountAndBalanceType(any(), anyString())).thenReturn(foodBalance);
         doAnswer(it -> {
             var newAmount = foodBalance.getAmount().subtract(transaction.getTotalAmount());
             foodBalance.setAmount(newAmount);
@@ -70,7 +69,7 @@ public class TransactionServiceTests {
         assertDoesNotThrow(() -> service.authorizeTransaction(transaction, "1"));
 
         verify(accountService).getReferenceById(anyLong());
-        verify(balanceService).findByAccountAndMcc(any(), anyInt());
+        verify(balanceService).findByAccountAndBalanceType(any(), anyString());
         verify(balanceService).debitBalance(any(), any());
         verify(repository).save(any());
         assertTrue(BigDecimalUtils.equals(expectedBalance, foodBalance.getAmount()));
@@ -92,51 +91,34 @@ public class TransactionServiceTests {
     }
 
     @Test
-    public void givenInvalidMcc_whenAuthorizeTransaction_thenTransactionIsCreated() {
-        var transaction = Transaction.builder().mcc(9999).merchant("Test")
-                .totalAmount(NumberUtils.toScaledBigDecimal(100.00)).build();
-
-        when(accountService.getReferenceById(anyLong())).thenReturn(new Account());
-        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenReturn(new CashBalance());
-        doNothing().when(balanceService).debitBalance(any(), any());
-
-        assertDoesNotThrow(() -> service.authorizeTransaction(transaction, "1"));
-
-        verify(accountService).getReferenceById(anyLong());
-        verify(balanceService).findByAccountAndMcc(any(), anyInt());
-        verify(balanceService).debitBalance(any(CashBalance.class), any());
-        verify(repository).save(any());
-    }
-
-    @Test
     public void givenInsufficientBalance_whenAuthorizeTransaction_thenThrowInsufficientBalanceException() {
-        var transaction = Transaction.builder().mcc(5412).merchant("Test")
+        var transaction = Transaction.builder().mcc(5412).merchant("UBER EATS     BRASIL")
                 .totalAmount(NumberUtils.toScaledBigDecimal(1000.00)).build();
 
         when(accountService.getReferenceById(anyLong())).thenReturn(new Account());
-        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenReturn(foodBalance);
+        when(balanceService.findByAccountAndBalanceType(any(), anyString())).thenReturn(foodBalance);
         doThrow(InsufficientBalanceException.class).when(balanceService).debitBalance(any(), any());
 
         assertThrows(InsufficientBalanceException.class, () -> service.authorizeTransaction(transaction, "1"));
 
         verify(accountService).getReferenceById(anyLong());
-        verify(balanceService).findByAccountAndMcc(any(), anyInt());
+        verify(balanceService).findByAccountAndBalanceType(any(), anyString());
         verify(balanceService).debitBalance(any(), any());
     }
 
     @Test
     public void givenInvalidAmount_whenAuthorizeTransaction_thenThrowInvalidAmountException() {
-        var transaction = Transaction.builder().mcc(5412).merchant("Test")
+        var transaction = Transaction.builder().mcc(5412).merchant("UBER EATS     BRASIL")
                 .totalAmount(NumberUtils.toScaledBigDecimal(-100.00)).build();
 
         when(accountService.getReferenceById(anyLong())).thenReturn(new Account());
-        when(balanceService.findByAccountAndMcc(any(), anyInt())).thenReturn(foodBalance);
+        when(balanceService.findByAccountAndBalanceType(any(), anyString())).thenReturn(foodBalance);
         doThrow(InvalidAmountException.class).when(balanceService).debitBalance(any(), any());
 
         assertThrows(InvalidAmountException.class, () -> service.authorizeTransaction(transaction, "1"));
 
         verify(accountService).getReferenceById(anyLong());
-        verify(balanceService).findByAccountAndMcc(any(), anyInt());
+        verify(balanceService).findByAccountAndBalanceType(any(), anyString());
         verify(balanceService).debitBalance(any(), any());
     }
 

@@ -106,6 +106,7 @@ components:
             - If the MCC is "5811" or "5812", the MEAL balance will be used.<br>
             - For any other MCC values, the CASH balance will be used as fallback.<br>
             - If the benefit balance has insufficient amount then CASH balance will be used as fallback.<br>
+            - Sometimes, the MCCs are incorrect and a transaction must be processed taking into account the merchant's data as well. Register merchants using the import.sql file located at src/main/resources/ to make sure that the name will be considered.
           example: 5411
         merchant:
           type: string
